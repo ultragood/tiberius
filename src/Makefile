@@ -60,7 +60,6 @@ $(TEST_DIR)/%.o:
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -I$(GTEST_DIR)/include -c $(@:.o=.cpp) -o $@
 
 #test: module=$(@:-test=)
-test: $(patsubst %.cpp, %.o, $(wildcard test/*.cpp))
+tests: gtest_main.a $(patsubst %.cpp, %.o, $(wildcard test/*.cpp))
 
-	echo $(^)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread gtest_main.a $^ -o test/testsuite
