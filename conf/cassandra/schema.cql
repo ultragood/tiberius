@@ -1,12 +1,9 @@
 
-create keyspace InvertedIndex
-    with strategy_options=[{replication_factor:1}];
+create keyspace InvertedIndex;
 
 use InvertedIndex;
 
-create column family Document 
-    with comparator = UTF8Type;
+create column family Document ;
 
-create column family TermInfo
-    with comparator = UTF8Type;
+create column family TermInfo;
  
