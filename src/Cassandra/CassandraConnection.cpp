@@ -1,9 +1,12 @@
-#include "Cassandra.h"
-#include "CassandraConnection.h"
 #include <iostream>
 #include <protocol/TBinaryProtocol.h>
 #include <thrift/transport/TSocket.h>
 #include <thrift/transport/TTransportUtils.h>
+
+#include "Cassandra.h"
+#include "CassandraConnection.h"
+#include "thrift/gen-cpp/tiberius_types.h"
+#include "thrift/gen-cpp/tiberius_constants.h"
 
 using namespace std;
 using namespace apache::thrift;
@@ -41,8 +44,11 @@ int main(){
     CassandraConnection::instance().get(csc, key, "TermInfo", "term");
     cout << "Value read is '" << csc.column.value.data() << "'..." << endl;
     CassandraConnection::instance().get(csc, key, "Document", "docid");
-    cout << "Value read is '" << csc.column.value << "'..." << endl;
     cout << "Value read is '" << ((data_t *) csc.column.value.data())->value << "'..." << endl;
+
+
+    
+
 
     CassandraConnection::instance().close();
 
