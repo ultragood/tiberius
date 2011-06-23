@@ -10,9 +10,9 @@ using namespace std;
 #include "freeling.h"
 #include "freeling/traces.h"
 
-#include "CompositeWord.h"
-#include "KeyPhrase.h"
-#include "../SuffixTree/SuffixTree.h"
+#include "Keywords/CompositeWord.h"
+#include "Keywords/KeyPhrase.h"
+#include "SuffixTree/SuffixTree.h"
 
 // predeclarations
 void PrintMorfo(list<sentence> &ls, map<string,int> &noun_freq);
@@ -32,7 +32,7 @@ void readArticle(string fileName, string &article) {
   }
   //cout << data << endl;
   vector<string> splitVec;
-  boost::split(splitVec, data, boost::is_any_of("\t"));
+  boost::split(splitVec, data, boost::is_any_of("\t"));xb
   //string article(splitVec[1]);
   article.append(splitVec[1]);
   article.append(".  ");
@@ -74,14 +74,14 @@ int main(int argc, char **argv) {
   // to choose only one tag per word)
   hmm_tagger tagger("en", path+"tagger.dat", true, true); 
   // create chunker
-  chart_parser parser(path+"grammar-dep.dat");
+  //chart_parser parser(path+"grammar-dep.dat");
   // create dependency parser 
-  dep_txala dep(path+"dep/dependences.dat", parser.get_start_symbol());
+  //dep_txala dep(path+"dep/dependences.dat", parser.get_start_symbol());
   
 
 
-  //int maxDocCount = 500;
-  int maxDocCount = 10;
+  int maxDocCount = 200;
+  //int maxDocCount = 10;
   int numDocs=0;  
   map<string, int> noun_doc_freq;
   map<string, int> noun_freq;
@@ -120,7 +120,19 @@ int main(int argc, char **argv) {
       stree.addSentence(sent, uid);
     }
   }
-  stree.displaySuffixTree();
+  //stree.displaySuffixTree();
+  //string phrase("Barack Obama");
+  //stree.isPhrase(phrase);
+  string phrase;
+  cout << "Enter a phrase: " << endl;
+  while (getline(cin,phrase)) {
+    if (phrase.size() <= 0) {
+      cout << "Please enter a phrase: " << endl;
+      continue;      
+    }
+    stree.isPhrase(phrase);
+  }
+
 }
 
 /////////   MAIN SAMPLE PROGRAM  -- end
@@ -144,7 +156,7 @@ void PrintMorfo(list<sentence> &ls, map<string, int> &noun_freq) {
 
     //cout<<"<SENT>"<<endl;
     // for each word in sentence
-    CompositeWord cw;
+    Keywords::CompositeWord cw;
     for (w=is->begin(); w!=is->end(); w++) {
       // print word form, with PoS and lemma chosen by the tagger
       if (w->get_parole().substr(0,2) != "NN") {
@@ -200,7 +212,7 @@ void docCount(list<sentence> &ls, map<string, int> &noun_doc_freq, map<string, i
 
     //cout<<"<SENT>"<<endl;
     // for each word in sentence
-    CompositeWord cw;
+    Keywords::CompositeWord cw;
     for (w=is->begin(); w!=is->end(); w++) {
       // print word form, with PoS and lemma chosen by the tagger
       if (w->get_parole().substr(0,2) != "NN") {

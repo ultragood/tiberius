@@ -32,6 +32,14 @@ vector<NLP::SuffixTree::STNode *> * NLP::SuffixTree::STNode::getChildren() {
     return &children;
 }
 
+NLP::SuffixTree::STNode * NLP::SuffixTree::STNode::getChildNode(int wordId) {
+  NLP::SuffixTree::STNode *result = NULL;
+  if (this->wordChildMap.find(wordId) != this->wordChildMap.end()) {
+    result = this->wordChildMap[wordId];
+  }
+  return result;
+}
+
 string NLP::SuffixTree::STNode::getWord() {
     return this->tree->getString(this->wordUid);
 }

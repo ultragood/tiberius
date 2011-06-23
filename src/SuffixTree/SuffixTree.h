@@ -10,7 +10,6 @@
 #include "STNode.h"
 #include "STStory.h"
 #include "json/value.h"
-//#include "../Analyzer/SentenceAnalyzer.h"
 #include "fries/language.h"
 using namespace std;
 
@@ -41,6 +40,7 @@ namespace NLP {
 
         class SuffixTree {
             public:
+	  SuffixTree();
 		SuffixTree(const string &data_type);
 		SuffixTree(const string &data_type, set<string> term_phrases);
                 virtual ~SuffixTree();
@@ -53,12 +53,9 @@ namespace NLP {
                 void addSentence(vector<word> &sentence, string &storyId);
                 void addSentence(vector<word> &sentence, unsigned long index, string &storyId);
                 void addSentence(vector<string> &sentence, unsigned long index, string &storyId);
-                void loadFiles(const vector<string> &files);
                 void displaySuffixTree();
                 set<STNode *> * getNodes(string &storyId);
 
-		void findLongestPhrases(STNode *node, string phrase = string());
-		void findPhrases(string uid);
 		priority_queue<TermFreq> getPhrases();
 		int getTotalNumberOfCoOccurrences(string &t, set<string> *coOccurSet=NULL);
 
@@ -72,6 +69,10 @@ namespace NLP {
 		inline set<string> getUnstemmedWords(string stemmedWord) {
 		  return (*this->stemWordMap)[stemmedWord];
 		}
+
+		double isPhrase(string &phrase);
+		double ridf(STNode *node);
+		
             private:
                 void initialize();
                 bool isNumeric( const char* pszInput);

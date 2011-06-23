@@ -32,11 +32,12 @@ void readArticle(string fileName, string &article) {
   }
   //cout << data << endl;
   vector<string> splitVec;
-  boost::split(splitVec, data, boost::is_any_of("\t"));
+  //boost::split(splitVec, data, boost::is_any_of("\t"));
+  boost::split(splitVec, data, boost::is_any_of("|"));
   //string article(splitVec[1]);
   article.append(splitVec[1]);
-  article.append(".  ");
-  article.append(splitVec[3]);
+  //article.append(".  ");
+  //article.append(splitVec[3]);
 }
 
 int main(int argc, char **argv) {

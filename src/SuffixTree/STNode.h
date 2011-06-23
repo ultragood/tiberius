@@ -31,6 +31,7 @@ namespace NLP {
                 unsigned long getNumberOfChildren();
 		int getFrequencyCount();
                 vector<STNode *> * getChildren();
+		STNode * getChildNode(int wordId);
                 string getWord();
                 string getPhrase();
 		void incrementFrequencyCount();

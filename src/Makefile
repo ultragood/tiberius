@@ -1,6 +1,6 @@
-MAIN_FILE=my_test.cpp
+FILES=my_test.cpp Cassandra/%
 BUILDDIR=.
-SOURCE_FILES=$(filter-out $(MAIN_FILE),$(wildcard */*.cpp) )
+SOURCE_FILES=$(filter-out $(FILES),$(wildcard */*.cpp) )
 OBJECT_FILES=$(patsubst %.cpp,$(BUILDDIR)/%.o,$(SOURCE_FILES))
 LIBS=-ldb_cxx -lmorfo -lfries -lomlet -lpcre $(call FLEXLIB,boost_filesystem) 
 CXXFLAGS=-Wall -Werror -fPIC -ggdb
@@ -14,7 +14,7 @@ FLEXLIB=-l$(subst lib,,$(basename $(notdir $(firstword $(wildcard /usr/lib/lib$1
 
 $(BUILDDIR)/%.o: %.cpp %.h
 	##@$(MKDIR) $(dir $@)
-	echo $@
+	echo "buildir $@ "
 	$(CXX) $(DEFINES) $(CXXFLAGS) $(INCLUDES) $(@:.o=.cpp) -c -o $(BUILDDIR)/$@
 
 libnlp.so: CORE_FLAGS=$(CXXFLAGS) -fpermissive -shared
@@ -27,7 +27,7 @@ my_sample: libnlp.so
 
 ### TEST STUFF
 GTEST_DIR=/opt/gtest-1.6.0
-TEST_INCLUDES=$(INCLUDES) $(GTEST_DIR)/ -I$(GTEST_DIR)/include
+TEST_INCLUDES=$(INCLUDES) -I$(GTEST_DIR)/include
 USER_DIR=.
 GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h $(GTEST_DIR)/include/gtest/internal/*.h 
 GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
@@ -51,15 +51,21 @@ gtest_main.a : gtest-all.o gtest_main.o
 # All Google Test headers.  Usually you shouldn't change this
 # definition.
 
-TEST_DIR=./test
+TEST_DIR=test
 TESTS = sample1_unittest
 
-# test: $(patsubst %.cpp, %-test, $(wildcard test/*.cpp))
-
-$(TEST_DIR)/%.o: 
+$(TEST_DIR)/%.o: $(TEST_DIR)/%.cpp
+	echo "compiling .0"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -I$(GTEST_DIR)/include -c $(@:.o=.cpp) -o $@
 
-#test: module=$(@:-test=)
-tests: gtest_main.a $(patsubst %.cpp, %.o, $(wildcard test/*.cpp))
 
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread gtest_main.a $^ -o test/testsuite
+clean-tests:
+	rm $(wildcard $(TEST_DIR)/*.o)	
+
+tests: clean-tests compile-tests
+
+compile-tests: libnlp.so gtest_main.a $(patsubst %.cpp, %.o, $(wildcard $(TEST_DIR)/*.cpp))
+#	$(patsubst %.cpp, %.o, $(wildcard test/*.cpp))
+	@cd ../canned_data && tar xvfz cnn.tar.gz > /dev/null
+	@sudo cp ../conf/freeling/tiberius-np.dat /usr/local/share/FreeLing/en/
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(TEST_INCLUDES) -lpthread gtest_main.a $(LIBS) -L. -lnlp $(patsubst %.cpp, %.o, $(wildcard $(TEST_DIR)/*.cpp)) -o test/testsuite

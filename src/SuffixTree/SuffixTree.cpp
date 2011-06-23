@@ -7,12 +7,18 @@
 #include <cmath>
 #include <algorithm>
 #include "../Keywords/CompositeWord.h"
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
 
 void NLP::SuffixTree::SuffixTree::initialize() {
     string root("__ROOT__");
     unsigned long uid = this->getUid(root, 0);
     this->root = this->createNode(uid);
     this->totalWordCount=0;
+}
+
+NLP::SuffixTree::SuffixTree::SuffixTree() {
+  this->initialize();
 }
 
 NLP::SuffixTree::SuffixTree::SuffixTree(const string &data_type) : data_type(data_type) {
@@ -53,7 +59,7 @@ void NLP::SuffixTree::SuffixTree::addSentence(vector<word> &lw, unsigned long in
   sentence::const_iterator w;
   Keywords::CompositeWord cw;
   vector<string> s;
-  for (unsigned int i=0; i<lw.size(); i++) {
+  for (unsigned int i=index; i<lw.size(); i++) {
     cw.addWord(lw[i]);
     string w = cw.toString();
     unsigned long uid = this->getUid(w, level);
@@ -227,6 +233,7 @@ int NLP::SuffixTree::SuffixTree::getNumWordsInSentencesContaining(string term) {
 }
     
 
+/*
 void NLP::SuffixTree::SuffixTree::findPhrases(string uid) {
   set<string> phraseSet;
   for (unsigned int i=0; i<this->sentenceNodes.size(); i++) {
@@ -267,7 +274,7 @@ void NLP::SuffixTree::SuffixTree::findPhrases(string uid) {
     }
   }
 }
-
+*/
 void NLP::SuffixTree::SuffixTree::getFrequencies(string g, string w, int &gfreq, int &wfreq, int &gwfreq) {
   for (unsigned int i=0; i<this->sentenceNodes.size(); i++) {
     vector<NLP::SuffixTree::STNode *> sentence = this->sentenceNodes[i];
@@ -304,70 +311,50 @@ void NLP::SuffixTree::SuffixTree::kaiSquared(NLP::SuffixTree::STNode *node1, NLP
   //cout << "Comparing: " << g << " with " << w << endl;
   //cout << "\t percent " <<  kai_sq << endl;
 }
-
+/*
 priority_queue<NLP::SuffixTree::TermFreq> NLP::SuffixTree::SuffixTree::getPhrases() {
   return this->phrases;
 }
+*/
 
 
-#ifdef SuffixTree_TEST
-#include "../Berkeley/BerkeleyFactory.h"
-#include "../Common/Constants.h"
-#include "../Common/Utils.h"
-#include <limits.h>
-
-int main(int argc, char **argv) {
-    if (argc < 3) {
-        cerr << "Usage: " << argv[0] << " [dataType] [location] <file_limit>" << endl
-             << "         location = [directory name or literal string 'db']" << endl;
-        return EXIT_FAILURE;
-    }
-
-    string dataType(argv[1]);
-
-    string uid(argv[2]);
-
-    map<string, string> propertiesMap;
-    const char *propertiesFilePtr = "/rt/properties/nlp.properties";
-    Properties::PropertyUtil::read(propertiesFilePtr, propertiesMap);
-    propertiesMap["berk_repl_allow"] = "0";
-    Properties::Props props(propertiesMap);
-    props.personalize("analyzer");
-
-    NLP::BerkeleyFactory::create_default(props);
-
-    NLP::SuffixTree::SuffixTree clusterAlg(uid, dataType);
-    clusterAlg.findPhrases(uid);
-    priority_queue<NLP::SuffixTree::TermFreq> phrases = clusterAlg.getPhrases();
-    cout << endl;
-    set<string> term_phrases;
-    while(!phrases.empty()) {
-      term_phrases.insert(phrases.top().term);
-      if (phrases.top().freq == 0) {
-	break;
-      }
-      //cout << "Term Phrases: " << phrases.top().term << " : " << phrases.top().freq << endl;
-      phrases.pop();
-    }
-    NLP::SuffixTree::SuffixTree tree(uid, dataType, term_phrases);
-    //tree.displaySuffixTree();
-    priority_queue<NLP::SuffixTree::TermFreq> pq;
-    string w;
-    for (set<string>::iterator it=term_phrases.begin(); it!=term_phrases.end(); it++) {
-      string g = *it;
-      int gfreq=0;
-      int wfreq=0;
-      int gwfreq=0;
-      tree.getFrequencies(g, w, gfreq, wfreq, gwfreq);
-      NLP::SuffixTree::TermFreq tf(g, gfreq, 0);
-      pq.push(tf);
-    }
-    while(!pq.empty()) {
-      NLP::SuffixTree::TermFreq tf = pq.top();
-      cout << tf.term << " : " << tf.freq << endl;
-      pq.pop();
-    }
-
-    NLP::BerkeleyFactory::clear_default();
+double NLP::SuffixTree::SuffixTree::ridf(NLP::SuffixTree::STNode *node) {
+  int wf = node->getFrequencyCount();
+  unsigned long df = node->getNumberOfStories();
+  unsigned int numDocs = this->stories.size();
+  double idfFrac = (double) (numDocs / (double) df);
+  double possion_fraq = (double) (wf / (double) numDocs);
+  // just a safe guard
+  if (possion_fraq >= 1) {
+    possion_fraq = 0;
+  }
+  cout << "wf: " << wf << " df: " << df << " D: " << numDocs << " idfFrac: " << idfFrac << " possion_fraq: " << possion_fraq << endl;
+  
+  double ridf = log2(idfFrac) - log2(1-possion_fraq);
+  return ridf;
 }
-#endif
+  
+
+double NLP::SuffixTree::SuffixTree::isPhrase(string &phrase) {
+  vector<string> words;
+  NLP::SuffixTree::STNode *node = this->root;
+  boost::split(words, phrase, boost::is_any_of(" "));
+  //vector<pair<string, int> > wordProbs;
+  bool found = true;
+  for (unsigned int i=0; i<words.size(); i++) {
+    unsigned long uid = this->getUid(words[i], i+1);
+    cout << "uid of phrase (" << phrase << " ) is: " << uid << endl;
+    NLP::SuffixTree::STNode *childNode = node->getChildNode((int) uid);
+    if (childNode == NULL) {
+      found = false;
+      break;
+    }
+    node = childNode;
+    cout << words[i] << " : " << node->getFrequencyCount() << endl;
+  }
+  double ridf = 0;
+  if (found) {
+    ridf = this->ridf(node);
+  }
+  return ridf;
+}
