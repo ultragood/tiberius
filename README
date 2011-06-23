@@ -3,3 +3,4 @@ Dependencies:
 
 FreeLing 2.2
 Cassandra 0.8
+Thrift 0.6.1
