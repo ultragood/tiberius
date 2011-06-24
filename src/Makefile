@@ -1,36 +1,60 @@
-FILES=my_test.cpp Cassandra/%
-BUILDDIR=.
+BUILD_DIR=../build
+BIN_DIR=../bin
+LIB_DIR=../lib
+
+### TEST STUFF
+GTEST_DIR=/opt/gtest-1.6.0
+TEST_INCLUDES=-I$(GTEST_DIR)/include
+USER_DIR=.
+GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h $(GTEST_DIR)/include/gtest/internal/*.h 
+GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
+
+FILES=my_test.cpp Cassandra/% test/%
+SRC_DIR=.
 SOURCE_FILES=$(filter-out $(FILES),$(wildcard */*.cpp) )
-OBJECT_FILES=$(patsubst %.cpp,$(BUILDDIR)/%.o,$(SOURCE_FILES))
-LIBS=-ldb_cxx -lmorfo -lfries -lomlet -lpcre $(call FLEXLIB,boost_filesystem) 
+OBJECT_FILES=$(addprefix $(BUILD_DIR)/, $(patsubst %.cpp, %.o,$(SOURCE_FILES)))
+CASSANDRA_SOURCE_FILES=$(wildcard Cassandra/*.cpp Cassandra/*/*.cpp Cassandra/*/*/*.cpp )
+CASSANDRA_OBJECT_FILES=$(addprefix $(BUILD_DIR)/, $(patsubst %.cpp, %.o,$(CASSANDRA_SOURCE_FILES)))
+
+$(warning $(CASSANDRA_OBJECT_FILES))
+
+LIBS=-ldb_cxx -lmorfo -lfries -lomlet -lpcre $(call FLEXLIB,boost_filesystem)  -lboost_thread -lboost_serialization -lthrift -L $(LIB_DIR) 
 CXXFLAGS=-Wall -Werror -fPIC -ggdb
 SOURCE_DEFINES=-DHAVE_CXX_STDHEADERS
 DEFINES=-D_LINUX -D_REENTRANT -D_GNU_SOURCE -D_LARGEFILE64_SOURCE $(D)
-INCLUDES=-I. 
+INCLUDES=-I. -I/usr/local/include/thrift -ICassandra/gen-cpp -ICassandra $(TEST_INCLUDES)
+
 
 
 FLEXLIB=-l$(subst lib,,$(basename $(notdir $(firstword $(wildcard /usr/lib/lib$1*.so /usr/lib64/lib$1*.so /usr/local/lib/lib$1*.so)))))
 
+$(BIN_DIR):
 
-$(BUILDDIR)/%.o: %.cpp %.h
-	##@$(MKDIR) $(dir $@)
-	echo "buildir $@ "
-	$(CXX) $(DEFINES) $(CXXFLAGS) $(INCLUDES) $(@:.o=.cpp) -c -o $(BUILDDIR)/$@
+	@mkdir -p $@
 
-libnlp.so: CORE_FLAGS=$(CXXFLAGS) -fpermissive -shared
-libnlp.so: $(OBJECT_FILES)
-	echo $(SOURCE_FILES)
+$(LIB_DIR):
+
+	@mkdir -p $@
+
+%.cpp: %.h
+	@touch $@
+
+$(BUILD_DIR)/%.o: %.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(DEFINES) $(CXXFLAGS) $(INCLUDES) $< -c -o $@
+
+libnlp.so : $(LIB_DIR)/libnlp.so
+
+$(LIB_DIR)/libnlp.so: CORE_FLAGS=$(CXXFLAGS) -fpermissive -shared
+$(LIB_DIR)/libnlp.so: $(OBJECT_FILES) $(LIB_DIR)
 	$(CXX) $(DEFINES) $(CORE_FLAGS) $(LINK_PATH) $(INCLUDES) $(LIBS) $(OBJECT_FILES) -o $@
 
-my_sample: libnlp.so
-	$(CXX) $(CXXFLAGS) $(DEFINES) $(INCLUDES) $(LIBS) -L. -lnlp my_sample.cpp -o my_sample
+my_sample: 
+	$(MAKE) $(BIN_DIR)/my_sample
 
-### TEST STUFF
-GTEST_DIR=/opt/gtest-1.6.0
-TEST_INCLUDES=$(INCLUDES) -I$(GTEST_DIR)/include
-USER_DIR=.
-GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h $(GTEST_DIR)/include/gtest/internal/*.h 
-GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
+
+$(BIN_DIR)/my_sample: libnlp.so $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) $(DEFINES) $(INCLUDES) $(LIBS) -L. -lnlp my_sample.cpp -o $@
 
 # For simplicity and to avoid depending on Google Test's
 # implementation details, the dependencies specified below are
@@ -51,21 +75,43 @@ gtest_main.a : gtest-all.o gtest_main.o
 # All Google Test headers.  Usually you shouldn't change this
 # definition.
 
-TEST_DIR=test
-TESTS = sample1_unittest
+TEST_DIR=$(BUILD_DIR)/test
 
-$(TEST_DIR)/%.o: $(TEST_DIR)/%.cpp
+$(TEST_DIR)/%.o: %.cpp
 	echo "compiling .0"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -I$(GTEST_DIR)/include -c $(@:.o=.cpp) -o $@
 
 
 clean-tests:
-	rm $(wildcard $(TEST_DIR)/*.o)	
 
-tests: clean-tests compile-tests
+	rm -rf $(TEST_DIR)
 
-compile-tests: libnlp.so gtest_main.a $(patsubst %.cpp, %.o, $(wildcard $(TEST_DIR)/*.cpp))
-#	$(patsubst %.cpp, %.o, $(wildcard test/*.cpp))
+tests: compile-tests
+
+
+TEST_SOURCE_FILES=$(wildcard test/*.cpp)
+TEST_OBJECT_FILES=$(addprefix $(BUILD_DIR)/, $(patsubst %.cpp, %.o, $(TEST_SOURCE_FILES)))
+
+compile-tests: libnlp.so gtest_main.a $(TEST_OBJECT_FILES)
+
 	@cd ../canned_data && tar xvfz cnn.tar.gz > /dev/null
 	@sudo cp ../conf/freeling/tiberius-np.dat /usr/local/share/FreeLing/en/
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(TEST_INCLUDES) -lpthread gtest_main.a $(LIBS) -L. -lnlp $(patsubst %.cpp, %.o, $(wildcard $(TEST_DIR)/*.cpp)) -o test/testsuite
+	@mkdir -p ../test
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(TEST_INCLUDES) -lpthread gtest_main.a $(LIBS) -L. -lnlp $(TEST_OBJECT_FILES) -o ../test/testsuite
+
+
+#### Cassandra stuff, independent for right now
+
+Cassandra/%.o: Cassandra/%.cpp
+
+	$(CXX) $(DEFINES) $(CXXFLAGS) $(INCLUDES) $(@:.o=.cpp) -c -o $@
+
+cassandra: $(BIN_DIR) $(BIN_DIR)/cassandra
+
+$(BIN_DIR)/cassandra: $(CASSANDRA_OBJECT_FILES) 
+	$(CXX) $(CXXFLAGS) $(DEFINES) $(INCLUDES) $(LIBS) $^ -o $@
+
+
+
+clean:
+	rm -rf $(BUILD_DIR)
