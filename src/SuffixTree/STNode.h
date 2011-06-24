@@ -1,6 +1,7 @@
 #ifndef __STNode__
 #define __STNode__
 
+#include <iostream>
 #include <string>
 #include <vector>
 #include <map>
@@ -38,6 +39,12 @@ namespace NLP {
 		STNode* getParent();
 		inline void setFreeLingWord(word w) {
 		  this->w = w;
+		}
+		
+		inline string getPos() {
+		  //cout << "about to get form: ";
+		  //cout << w.get_form() << endl;
+		  return w.get_parole();
 		}
 
             private:

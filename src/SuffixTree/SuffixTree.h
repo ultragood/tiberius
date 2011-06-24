@@ -69,12 +69,18 @@ namespace NLP {
 		inline set<string> getUnstemmedWords(string stemmedWord) {
 		  return (*this->stemWordMap)[stemmedWord];
 		}
-
-		double isPhrase(string &phrase);
-		double ridf(STNode *node);
+		/*
+		 * Function that returns the residual IDF for a 
+		 * given phrase as long as it satisifes some 
+		 * basic parts of speach rules.
+		 * RIDF = IDF - EXPECTED_IDF
+		 * where IDF = log2(N/df) - log2(1- wf/N)
+		 */
+		double calcInformativeness(string &phrase);
 		
             private:
                 void initialize();
+		double _ridf(STNode *node);
                 bool isNumeric( const char* pszInput);
                 double idf(STNode *node);
                 void addStoryToNodeMap(string &storyId, STNode *node);

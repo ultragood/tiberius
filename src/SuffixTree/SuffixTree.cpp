@@ -318,24 +318,28 @@ priority_queue<NLP::SuffixTree::TermFreq> NLP::SuffixTree::SuffixTree::getPhrase
 */
 
 
-double NLP::SuffixTree::SuffixTree::ridf(NLP::SuffixTree::STNode *node) {
+double NLP::SuffixTree::SuffixTree::_ridf(NLP::SuffixTree::STNode *node) {
   int wf = node->getFrequencyCount();
   unsigned long df = node->getNumberOfStories();
   unsigned int numDocs = this->stories.size();
+  double oneHalfPercentNumDocs =  (double) numDocs * 0.005;
+  if (wf == 1 || oneHalfPercentNumDocs > wf) {
+    return 0;
+  }
   double idfFrac = (double) (numDocs / (double) df);
   double possion_fraq = (double) (wf / (double) numDocs);
   // just a safe guard
   if (possion_fraq >= 1) {
     possion_fraq = 0;
   }
-  cout << "wf: " << wf << " df: " << df << " D: " << numDocs << " idfFrac: " << idfFrac << " possion_fraq: " << possion_fraq << endl;
+  //cout << "wf: " << wf << " df: " << df << " D: " << numDocs << " idfFrac: " << idfFrac << " possion_fraq: " << possion_fraq <<  " idf: " << log2(idfFrac) << endl;
   
   double ridf = log2(idfFrac) - log2(1-possion_fraq);
   return ridf;
 }
   
 
-double NLP::SuffixTree::SuffixTree::isPhrase(string &phrase) {
+double NLP::SuffixTree::SuffixTree::calcInformativeness(string &phrase) {
   vector<string> words;
   NLP::SuffixTree::STNode *node = this->root;
   boost::split(words, phrase, boost::is_any_of(" "));
@@ -343,18 +347,35 @@ double NLP::SuffixTree::SuffixTree::isPhrase(string &phrase) {
   bool found = true;
   for (unsigned int i=0; i<words.size(); i++) {
     unsigned long uid = this->getUid(words[i], i+1);
-    cout << "uid of phrase (" << phrase << " ) is: " << uid << endl;
+    //cout << "uid of phrase (" << phrase << " ) is: " << uid << endl;
     NLP::SuffixTree::STNode *childNode = node->getChildNode((int) uid);
     if (childNode == NULL) {
       found = false;
       break;
     }
+    if (i == 0) {
+      // make sure the first word is a noun or verb
+      string pos = childNode->getPos();
+      if (pos.size() >= 2 && (pos.substr(0,2) == "NN" || 
+			      pos.substr(0,2) == "JJ" || 
+			      pos.substr(0,2) == "RB" || 
+			      pos.substr(0,2) == "VB")) {      
+	// this is fine
+      }else{
+	break;
+      }
+    }
     node = childNode;
-    cout << words[i] << " : " << node->getFrequencyCount() << endl;
+    //cout << words[i] << " : " << node->getFrequencyCount() << endl;
   }
   double ridf = 0;
+
   if (found) {
-    ridf = this->ridf(node);
+    // make sure the last node is a noun or verb
+    string pos = node->getPos();
+    if (pos.size() >= 2 && (pos.substr(0,2) == "NN" || pos.substr(0,2) == "VB")) {
+      ridf = this->_ridf(node);
+    }
   }
   return ridf;
 }

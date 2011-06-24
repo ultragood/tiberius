@@ -4,6 +4,7 @@
 #include <dirent.h>
 
 #include "../SuffixTree/SuffixTree.h"
+#include "../Keywords/Phrase.h"
 
 #include "boost/filesystem.hpp"
 #include <boost/algorithm/string/split.hpp>
@@ -12,6 +13,8 @@
 #include "freeling.h"
 #include "freeling/traces.h"
 #include "../Keywords/CompositeWord.h"
+#include <boost/algorithm/string/split.hpp>
+#include <queue>
 
 using namespace std;
 
@@ -19,7 +22,11 @@ using namespace std;
 //class SuffixTreeTest : public ::testing::Test {
 class SuffixTreeTest {
 public:
-    SuffixTreeTest() { 
+    SuffixTreeTest() {
+      if (stree) {
+	return;
+      }
+      stree = new NLP::SuffixTree::SuffixTree();
       string article;
       string dir("/home/mikep/work/tiberius/canned_data/cnn/");
       // freeling path.
@@ -90,7 +97,7 @@ public:
 	for (list<sentence>::iterator it=ls.begin(); it!= ls.end(); it++) {
 	  vector<word> sent = it->get_words();
 	  string uid(ss.str()+".txt");
-	  stree.addSentence(sent, uid);
+	  stree->addSentence(sent, uid);
 	}
       }
     }
@@ -107,27 +114,119 @@ public:
       article=splitVec[1];
     }
 
-    virtual ~SuffixTreeTest() { }
+  virtual ~SuffixTreeTest() { if (stree) delete stree; stree = NULL; }
     virtual void setUp() { }
 
     virtual void tearDown() { }
 
-    NLP::SuffixTree::SuffixTree stree;
+    static NLP::SuffixTree::SuffixTree *stree;
   };
 
+NLP::SuffixTree::SuffixTree * SuffixTreeTest::stree = NULL;
+SuffixTreeTest stt;
 
-  TEST(SuffixTreeTest, isPhraseFindsEuropeanCentralBank) {
-    SuffixTreeTest stt;
-    cout << "Hello " << endl;
-    string phrase("European Central Bank");
-    //stt.stree.displaySuffixTree();
-    double ridf = stt.stree.isPhrase(phrase);
-    cout << "ridf of " << phrase << ": " << ridf << endl;
-    string phrase2("European");
-    ridf = stt.stree.isPhrase(phrase2);
-    cout << "ridf of " << phrase2 << ": " << ridf << endl;
+TEST(SuffixTreeTest, ridfFindsEuropeanCentralBank) {
+  //SuffixTreeTest stt;
+  string phrase("European Central Bank");
+  double ridf1 = SuffixTreeTest::stree->calcInformativeness(phrase);
+  string phrase2("European");
+  double ridf2 = SuffixTreeTest::stree->calcInformativeness(phrase2);
+  EXPECT_TRUE(ridf1 > ridf2);
+}
+
+
+TEST(SuffixTreeTest, findPhrases) {
+  string s1("huge");
+  string s2("budget");
+  string s3("budget deficit");
+  string s4("huge budget deficit");
+  double budget = SuffixTreeTest::stree->calcInformativeness(s2);
+  double budget_deficit = SuffixTreeTest::stree->calcInformativeness(s3);
+  EXPECT_TRUE(SuffixTreeTest::stree->calcInformativeness(s1) == 0.0);
+  EXPECT_TRUE(budget > 0.0);
+  EXPECT_TRUE(budget_deficit > budget);
+  EXPECT_TRUE(SuffixTreeTest::stree->calcInformativeness(s4) == 0.0);
+  //cout << s1 << " ridf: " << SuffixTreeTest::stree->calcInformativeness(s1) << endl;
+  //cout << s2 << " ridf: " << SuffixTreeTest::stree->calcInformativeness(s2) << endl;
+  //cout << s3 << " ridf: " << SuffixTreeTest::stree->calcInformativeness(s3) << endl;
+  //cout << s4 << " ridf: " << SuffixTreeTest::stree->calcInformativeness(s4) << endl;
+}
+
+
+TEST(SuffixTreeTest, findPhrases2) {
+  string s1("Lehman");
+  string s2("Lehman Brothers");
+  string s3("Lehman Brothers Investment");
+  double l_ridf = SuffixTreeTest::stree->calcInformativeness(s1);
+  double lb_ridf = SuffixTreeTest::stree->calcInformativeness(s2);
+  double lbi_ridf = SuffixTreeTest::stree->calcInformativeness(s3);
+  // because they appear same number of times.
+  EXPECT_TRUE(l_ridf == lb_ridf);
+  // because it appears in less then 0.05% of the corpus or only one time.
+  EXPECT_TRUE(lbi_ridf == 0.0);
+}
+
+void getPhrase(vector<string> &words, unsigned int &start, unsigned int &end, string &phrase) {
+  for (unsigned int i=start; i<end; i++) {
+    if (i > start) {
+      phrase.append(" ");
+    }
+    phrase.append(words[i]);
   }
+}
+    
+TEST(SuffixTreeTest, analyzePhrase) {
+  string sentence = "Syrian President Bashar al-Assad offered vague promises of reform and clear threats against protesters Monday as he addressed his nation and the rest of the world whose leaders called for swift changes some saying he had passed the point of no return";
+  vector<string> words;
+  boost::split(words, sentence, boost::is_any_of(" "));
+
+  priority_queue<Keywords::Phrase> pq;
+  for (unsigned int i=0; i<words.size(); i++) {
+    for (unsigned int j=i; j<=words.size(); j++) {
+      string phrase;
+      if (i == j) {
+	continue;
+      }
+      getPhrase(words, i, j, phrase);
+      double ridf = SuffixTreeTest::stree->calcInformativeness(phrase);
+      if (ridf > 0) {
+	pq.push(Keywords::Phrase(phrase, ridf));
+      }
+    }
+  }
+  if (pq.empty()) {
+    FAIL();
+  }
+  double ridf = pq.top().ridf;
+  int tmp = (int) (ridf*100.0);
+  ridf = (double) ((double) tmp / (double) 100.0);
+  EXPECT_TRUE(pq.top().phrase == "Syrian");
+  EXPECT_TRUE(ridf == 6.7);
+  pq.pop();
+  if (pq.empty()) {
+    FAIL();
+  }
+  ridf = pq.top().ridf;
+  tmp = (int) (ridf*100.0);
+  ridf = (double) ((double) tmp / (double) 100.0);
+  EXPECT_TRUE(pq.top().phrase == "Bashar");
+  EXPECT_TRUE(ridf == 6.62);
+  pq.pop();
+  if (pq.empty()) {
+    FAIL();
+  }
+  ridf = pq.top().ridf;
+  tmp = (int) (ridf*100.0);
+  ridf = (double) ((double) tmp / (double) 100.0);
+  EXPECT_TRUE(pq.top().phrase == "threats");
+  EXPECT_TRUE(ridf == 5.64);
+  //  pq.top().phrase << " ridf: " << pq.top().ridf << endl;
+  //while (!pq.empty()) {
+  //  cout << 
+  //  pq.pop();
   //}
+}
+  //
 
 /*
 int main(int argc, char **argv) {
