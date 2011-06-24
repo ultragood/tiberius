@@ -4,13 +4,14 @@
 #include <boost/tokenizer.hpp>
 #include <string>
 #include "Types.h"
+#include "TokenStream.h"
 
 using namespace std;
 using namespace boost;
 
 namespace tiberius{ namespace analysis { namespace streams{
 
-    class WhitespaceTokenStream {
+    class WhitespaceTokenStream : TokenStream{
         public:
         ~WhitespaceTokenStream(){}
         WhitespaceTokenStream(std::string & text);

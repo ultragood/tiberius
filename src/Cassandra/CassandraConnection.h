@@ -59,7 +59,7 @@ namespace tiberius{ namespace index {
             return (int64_t)ltime;
         };
 
-        bool insert(const string &key, const string &col_family,  const string &col_name, const string &value, bool is_super_col = false){
+        bool insert(const string &key, const string &col_family,  const string &col_name, const string &value, string super_col = ""){
             Column c;
             c.name.assign(col_name);
             c.value.assign(value);
@@ -70,7 +70,8 @@ namespace tiberius{ namespace index {
 
             ColumnParent cp;
             cp.column_family.assign(col_family);
-            cp.__isset.super_column = is_super_col;
+            cp.super_column.assign(super_col);
+            cp.__isset.super_column = super_col.size() > 0;
 
             return insert(key, cp, c);
 
@@ -116,7 +117,7 @@ namespace tiberius{ namespace index {
         }
 
 
-        bool getAll(string keyFrom, string keyTo, ColumnParent cparent){
+        bool getAll(string keyFrom, string keyTo, ColumnParent cparent, vector<KeySlice> &results){
             // get the entire row for a key
             SliceRange sr;
             sr.start = "";
@@ -132,8 +133,9 @@ namespace tiberius{ namespace index {
             range.__isset.start_key = true;
             range.__isset.end_key = true;
 
-            vector<KeySlice> results;
             client.get_range_slices(results, cparent, sp, range, ConsistencyLevel::ONE);
+
+            /*
             for(size_t i=0; i<results.size(); i++){
               printf("Key: %s\n", results[i].key.c_str());
               for(size_t x=0; x<results[i].columns.size(); x++){
@@ -141,7 +143,7 @@ namespace tiberius{ namespace index {
                   results[i].columns[x].column.value.c_str());
               }
             }
-
+            */
             return true;
         }
 

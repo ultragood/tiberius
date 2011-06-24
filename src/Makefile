@@ -1,6 +1,7 @@
 BUILD_DIR=../build
 BIN_DIR=../bin
 LIB_DIR=../lib
+TEST_DIR=../test
 
 ### TEST STUFF
 GTEST_DIR=/opt/gtest-1.6.0
@@ -15,8 +16,6 @@ SOURCE_FILES=$(filter-out $(FILES),$(wildcard */*.cpp) )
 OBJECT_FILES=$(addprefix $(BUILD_DIR)/, $(patsubst %.cpp, %.o,$(SOURCE_FILES)))
 CASSANDRA_SOURCE_FILES=$(wildcard Cassandra/*.cpp Cassandra/*/*.cpp Cassandra/*/*/*.cpp )
 CASSANDRA_OBJECT_FILES=$(addprefix $(BUILD_DIR)/, $(patsubst %.cpp, %.o,$(CASSANDRA_SOURCE_FILES)))
-
-$(warning $(CASSANDRA_OBJECT_FILES))
 
 LIBS=-ldb_cxx -lmorfo -lfries -lomlet -lpcre $(call FLEXLIB,boost_filesystem)  -lboost_thread -lboost_serialization -lthrift -L $(LIB_DIR) 
 CXXFLAGS=-Wall -Werror -fPIC -ggdb
@@ -60,31 +59,17 @@ $(BIN_DIR)/my_sample: libnlp.so $(BIN_DIR)
 # implementation details, the dependencies specified below are
 # conservative and not optimized.  This is fine as Google Test
 # compiles fast and for ordinary users its source rarely changes.
-gtest-all.o : $(GTEST_SRCS_)
-	$(CXX) $(CPPFLAGS) -I$(GTEST_DIR) -I$(GTEST_DIR)/include $(CXXFLAGS) -c $(GTEST_DIR)/src/gtest-all.cc
+$(BUILD_DIR)/gtest-all.o : $(GTEST_SRCS_)
+	$(CXX) $(CPPFLAGS) -I$(GTEST_DIR) -I$(GTEST_DIR)/include $(CXXFLAGS) -c $(GTEST_DIR)/src/gtest-all.cc -o $@
 
-gtest_main.o : $(GTEST_SRCS_)
-	$(CXX) $(CPPFLAGS) -I$(GTEST_DIR) -I$(GTEST_DIR)/include $(CXXFLAGS) -c $(GTEST_DIR)/src/gtest_main.cc
+$(BUILD_DIR)/gtest_main.o : $(GTEST_SRCS_)
+	$(CXX) $(CPPFLAGS) -I$(GTEST_DIR) -I$(GTEST_DIR)/include $(CXXFLAGS) -c $(GTEST_DIR)/src/gtest_main.cc -o $@
 
-gtest.a : gtest-all.o
-	$(AR) $(ARFLAGS) $@ $^
+$(BUILD_DIR)/gtest.a : $(BUILD_DIR)/gtest-all.o
+	$(AR) $(ARFLAGS) $@ $^ 
 
-gtest_main.a : gtest-all.o gtest_main.o
-	$(AR) $(ARFLAGS) $@ $^
-
-# All Google Test headers.  Usually you shouldn't change this
-# definition.
-
-TEST_DIR=$(BUILD_DIR)/test
-
-$(TEST_DIR)/%.o: %.cpp
-	echo "compiling .0"
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -I$(GTEST_DIR)/include -c $(@:.o=.cpp) -o $@
-
-
-clean-tests:
-
-	rm -rf $(TEST_DIR)
+$(BUILD_DIR)/gtest_main.a : $(BUILD_DIR)/gtest-all.o $(BUILD_DIR)/gtest_main.o
+	$(AR) $(ARFLAGS) $@ $^ 
 
 tests: compile-tests
 
@@ -92,12 +77,12 @@ tests: compile-tests
 TEST_SOURCE_FILES=$(wildcard test/*.cpp)
 TEST_OBJECT_FILES=$(addprefix $(BUILD_DIR)/, $(patsubst %.cpp, %.o, $(TEST_SOURCE_FILES)))
 
-compile-tests: libnlp.so gtest_main.a $(TEST_OBJECT_FILES)
+compile-tests: libnlp.so $(BUILD_DIR)/gtest_main.a $(TEST_OBJECT_FILES)
 
 	@cd ../canned_data && tar xvfz cnn.tar.gz > /dev/null
 	@sudo cp ../conf/freeling/tiberius-np.dat /usr/local/share/FreeLing/en/
 	@mkdir -p ../test
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(TEST_INCLUDES) -lpthread gtest_main.a $(LIBS) -L. -lnlp $(TEST_OBJECT_FILES) -o ../test/testsuite
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(TEST_INCLUDES) -lpthread $(BUILD_DIR)/gtest_main.a $(LIBS) -L. -lnlp $(TEST_OBJECT_FILES) -o ../test/testsuite
 
 
 #### Cassandra stuff, independent for right now
@@ -114,4 +99,5 @@ $(BIN_DIR)/cassandra: $(CASSANDRA_OBJECT_FILES)
 
 
 clean:
-	rm -rf $(BUILD_DIR)
+
+	rm -rf $(BUILD_DIR) $(BIN_DIR) $(LIB_DIR) $(TEST_DIR)

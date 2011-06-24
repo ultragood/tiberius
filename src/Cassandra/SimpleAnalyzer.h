@@ -1,8 +1,9 @@
 
 #ifndef SIMPLEANALYZER_H_INCLUDED
 #define SIMPLEANALYZER_H_INCLUDED
-#include "Streams/TokenStream.h"
+#include "Streams/WhitespaceTokenStream.h"
 #include "Analyzer.h"
+#include <boost/shared_ptr.hpp>
 
 namespace tiberius{ namespace analysis {
     class SimpleAnalyzer : public Analyzer{
@@ -12,8 +13,9 @@ namespace tiberius{ namespace analysis {
             virtual ~SimpleAnalyzer();
 
             streams::TokenStream * getTokenStream(std::string &text);
+
         private:
-            streams::TokenStream * _tokenStream;
+            boost::shared_ptr<streams::WhitespaceTokenStream> _tokenStream;
     };
 } }
 

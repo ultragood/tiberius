@@ -5,5 +5,6 @@ use InvertedIndex;
 
 create column family Document ;
 
-create column family TermInfo;
+create column family TermInfo
+    with column_type = 'Super';
  

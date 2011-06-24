@@ -6,23 +6,20 @@ using namespace tiberius::analysis;
 using namespace std;
 
 SimpleAnalyzer::SimpleAnalyzer(){
-    _tokenStream = NULL;
 }
 
 SimpleAnalyzer::~SimpleAnalyzer(){
-    if(_tokenStream){
-        delete _tokenStream;
-    }
 }
 
 
 streams::TokenStream  * SimpleAnalyzer::getTokenStream(string & text){
-    if(_tokenStream != NULL){
-        delete _tokenStream;
+    if(_tokenStream.get() != NULL){
+        _tokenStream.reset();
     }
-    _tokenStream =( (streams::TokenStream *) new streams::WhitespaceTokenStream(text) );
 
-    return _tokenStream;
+    _tokenStream = boost::shared_ptr<streams::WhitespaceTokenStream>(new streams::WhitespaceTokenStream(text));
+
+    return (streams::TokenStream *) _tokenStream.get();
 }
 
 
