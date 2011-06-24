@@ -28,27 +28,27 @@ namespace tiberius{
         public:
 
         TermFrequencyVector();
-        virtual string toBytes();
-        virtual void read(string &bytes);
 
         // temp for testing
         void add(string term, int freq, vector<int> &positions);
 
-// private:
+        int getCount(){return count;}
+
+        private:
+
         int count;
         vector<string> terms;
         vector<int> frequencies;
         vector<vector<int> > positions;
 
-        private:
-            friend class boost::serialization::access;
-            template<class Archive>
-            void serialize(Archive &ar, const unsigned int version){
-                ar & terms;
-                ar & frequencies;
-                ar & positions;
-                ar & count;
-            }
+        friend class boost::serialization::access;
+        template<class Archive>
+        void serialize(Archive &ar, const unsigned int version){
+            ar & terms;
+            ar & frequencies;
+            ar & positions;
+            ar & count;
+        }
 
     };
 }
