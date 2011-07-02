@@ -17,7 +17,7 @@ OBJECT_FILES=$(addprefix $(BUILD_DIR)/, $(patsubst %.cpp, %.o,$(SOURCE_FILES)))
 CASSANDRA_SOURCE_FILES=$(wildcard Cassandra/*.cpp Cassandra/*/*.cpp Cassandra/*/*/*.cpp )
 CASSANDRA_OBJECT_FILES=$(addprefix $(BUILD_DIR)/, $(patsubst %.cpp, %.o,$(CASSANDRA_SOURCE_FILES)))
 
-LIBS=-ldb_cxx -lmorfo -lfries -lomlet -lpcre $(call FLEXLIB,boost_filesystem)  -lboost_thread -lboost_serialization -lthrift -L $(LIB_DIR) 
+LIBS=-ldb_cxx -lmorfo -lfries -lomlet -lpcre $(call FLEXLIB,boost_filesystem)  $(call FLEXLIB,boost_thread) $(call FLEXLIB,boost_serialization) -lthrift -L $(LIB_DIR) 
 CXXFLAGS=-Wall -Werror -fPIC -ggdb
 SOURCE_DEFINES=-DHAVE_CXX_STDHEADERS
 DEFINES=-D_LINUX -D_REENTRANT -D_GNU_SOURCE -D_LARGEFILE64_SOURCE $(D)

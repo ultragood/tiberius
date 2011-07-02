@@ -1,3 +1,4 @@
+connect localhost/9160;
 
 create keyspace InvertedIndex;
 
