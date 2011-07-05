@@ -19,7 +19,7 @@ TermFrequencyVector IndexReader::getTermFrequencyVector(string &docId){
 
 
     vector<KeySlice> key_slices;
-    CassandraConnection::instance().getAll(docId, "", column_parent, key_slices);
+    CassandraConnection::instance().getAll(docId, docId, column_parent, key_slices);
 
     unsigned int token_count;
     vector<unsigned int> frequencies;
