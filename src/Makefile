@@ -10,7 +10,7 @@ USER_DIR=.
 GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h $(GTEST_DIR)/include/gtest/internal/*.h 
 GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
 
-FILES=my_test.cpp Cassandra/% test/%
+FILES=my_test.cpp Cassandra/% test/% Tools/%
 SRC_DIR=.
 SOURCE_FILES=$(filter-out $(FILES),$(wildcard */*.cpp) )
 OBJECT_FILES=$(addprefix $(BUILD_DIR)/, $(patsubst %.cpp, %.o,$(SOURCE_FILES)))
@@ -27,14 +27,6 @@ INCLUDES=-I. -I/usr/local/include/thrift -ICassandra/gen-cpp -ICassandra $(TEST_
 
 FLEXLIB=-l$(subst lib,,$(basename $(notdir $(firstword $(wildcard /usr/lib/lib$1*.so /usr/lib64/lib$1*.so /usr/local/lib/lib$1*.so)))))
 
-$(BIN_DIR):
-
-	@mkdir -p $@
-
-$(LIB_DIR):
-
-	@mkdir -p $@
-
 %.cpp: %.h
 	@touch $@
 
@@ -45,15 +37,9 @@ $(BUILD_DIR)/%.o: %.cpp
 libnlp.so : $(LIB_DIR)/libnlp.so
 
 $(LIB_DIR)/libnlp.so: CORE_FLAGS=$(CXXFLAGS) -fpermissive -shared
-$(LIB_DIR)/libnlp.so: $(OBJECT_FILES) $(LIB_DIR)
+$(LIB_DIR)/libnlp.so: $(OBJECT_FILES) 
+	@mkdir -p $(LIB_DIR)
 	$(CXX) $(DEFINES) $(CORE_FLAGS) $(LINK_PATH) $(INCLUDES) $(LIBS) $(OBJECT_FILES) -o $@
-
-my_sample: 
-	$(MAKE) $(BIN_DIR)/my_sample
-
-
-$(BIN_DIR)/my_sample: libnlp.so $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) $(DEFINES) $(INCLUDES) $(LIBS) -L. -lnlp my_sample.cpp -o $@
 
 # For simplicity and to avoid depending on Google Test's
 # implementation details, the dependencies specified below are
@@ -85,17 +71,13 @@ compile-tests: libnlp.so $(BUILD_DIR)/gtest_main.a $(TEST_OBJECT_FILES)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(TEST_INCLUDES) -lpthread $(BUILD_DIR)/gtest_main.a $(LIBS) -L. -lnlp $(TEST_OBJECT_FILES) -o ../test/testsuite
 
 
-#### Cassandra stuff, independent for right now
+#### main apps
 
-Cassandra/%.o: Cassandra/%.cpp
+$(BIN_DIR)/%: $(CASSANDRA_OBJECT_FILES) %.cpp
 
-	$(CXX) $(DEFINES) $(CXXFLAGS) $(INCLUDES) $(@:.o=.cpp) -c -o $@
-
-cassandra: $(BIN_DIR) $(BIN_DIR)/cassandra
-
-$(BIN_DIR)/cassandra: $(CASSANDRA_OBJECT_FILES) 
-	$(CXX) $(CXXFLAGS) $(DEFINES) $(INCLUDES) $(LIBS) $^ -o $@
-
+	@mkdir -p $(dir $@)
+	@$(MAKE) libnlp.so
+	$(CXX) $(CXXFLAGS) $(DEFINES) $(INCLUDES) $(LIBS) -lnlp $^ -o $@
 
 
 clean:
@@ -103,5 +85,3 @@ clean:
 	rm -rf $(BUILD_DIR) $(BIN_DIR) $(LIB_DIR) $(TEST_DIR)
 
 
-mytest: mytest.cpp libnlp.so
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CASSANDRA_OBJECT_FILES) $(INCLUDES) -lpthread $(LIBS) -L. -lnlp mytest.cpp -o mytest

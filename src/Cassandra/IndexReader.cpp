@@ -78,7 +78,7 @@ void IndexReader::getDocsForTerm(string &term, vector<string> &docs){
                 }
 
             }
-            cout << "{docid: docid, " << " frequency: " << frequency << ", positions: [";
+            cout << "{docid: " << docid << ", " << " frequency: " << frequency << ", positions: [";
             for(unsigned int i=0; i < positions.size(); i++){
                 if(i > 0) cout << ", ";
                 cout << positions[i];

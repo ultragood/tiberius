@@ -40,10 +40,10 @@ namespace tiberius{
         // temp for testing
         void add(string term, unsigned int freq, vector<unsigned int> positions);
 
-        int getTokenCount(){return token_count;}
-        vector<vector<unsigned int> > getPositions() { return positions; }
-        vector<unsigned int> getFrequencies() { return frequencies; }
-        vector<string> getTerms(){ return terms;}
+        unsigned int& getTokenCount(){return token_count;}
+        vector<vector<unsigned int> >& getPositions() { return positions; }
+        vector<unsigned int>& getFrequencies() { return frequencies; }
+        vector<string>& getTerms(){ return terms;}
 
         string toString(){
             ostringstream os;
