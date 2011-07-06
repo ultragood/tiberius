@@ -89,6 +89,17 @@ void NLP::SuffixTree::STNode::incrementFrequencyCount() {
   this->count++;
 }
 
+/*
+void NLP::SuffixTree::STNode::visit(visitor_function func) {
+  func(*this);
+  for (vector<NLP::SuffixTree::STNode *>::iterator it = children.begin(); it != children.end(); ++it) {
+    NLP::SuffixTree::STNode *node = *it;
+	visit(func);
+  }
+
+}
+*/
+
 void NLP::SuffixTree::STNode::print() {
   string s = this->tree->getString(this->wordUid);
   int level = getLevel();

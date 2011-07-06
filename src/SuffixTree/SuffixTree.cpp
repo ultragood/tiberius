@@ -21,14 +21,6 @@ NLP::SuffixTree::SuffixTree::SuffixTree() {
   this->initialize();
 }
 
-NLP::SuffixTree::SuffixTree::SuffixTree(const string &data_type) : data_type(data_type) {
-  this->initialize();
-}
-
-NLP::SuffixTree::SuffixTree::SuffixTree(const string &data_type, set<string> term_phrases) : data_type(data_type) {
-  this->initialize();
-}
-
 NLP::SuffixTree::SuffixTree::~SuffixTree() {
     for (unsigned int i = 0, length = nodes.size(); i < length; ++i) {
         delete nodes[i];
@@ -181,143 +173,6 @@ set<NLP::SuffixTree::STNode *> * NLP::SuffixTree::SuffixTree::getNodes(string &s
     return nodeSet;
 }
 
-float NLP::SuffixTree::SuffixTree::sim(set<NLP::SuffixTree::STNode *> *nodes1,
-				                   set<NLP::SuffixTree::STNode *> *nodes2) {
-    set<NLP::SuffixTree::STNode *> result;
-    set<NLP::SuffixTree::STNode *>::iterator it_result;
-    set<NLP::SuffixTree::STNode *> result_intersect;
-    set<NLP::SuffixTree::STNode *>::iterator it_result_intersect;
-    insert_iterator< set<NLP::SuffixTree::STNode *> > insert_it(result, result.begin());
-    insert_iterator< set<NLP::SuffixTree::STNode *> > insert_intersect_it(result_intersect, result_intersect.begin());
-    set_union(nodes1->begin(), nodes1->end(), nodes2->begin(), nodes2->end(), insert_it);
-    set_intersection(nodes1->begin(), nodes1->end(), nodes2->begin(), nodes2->end(), insert_intersect_it);
-    float similarity = static_cast<float>(result_intersect.size()) / result.size();
-    return similarity;
-}
-
-bool NLP::SuffixTree::SuffixTree::isNumeric(const char* pszInput) {
-    istringstream iss(pszInput);
-    double dTestSink;
-    iss >> dTestSink;
-    if (!iss) {
-        return false;
-    }
-    return true;
-}
-
-double NLP::SuffixTree::SuffixTree::idf(NLP::SuffixTree::STNode *node) {
-    unsigned long df = node->getNumberOfStories();
-    unsigned long numDocs = nodes.size();
-    return log( numDocs / df );
-}
-
-int NLP::SuffixTree::SuffixTree::getNumWordsInSentencesContaining(string term) {
-  int count=0;
-  for (unsigned int i=0; i<this->sentenceNodes.size(); i++) {
-    vector<NLP::SuffixTree::STNode *> sentence = this->sentenceNodes[i];
-    //set<string> terms;
-    bool foundTerm=false;
-    int sentenceCount=0;
-    for (unsigned int j=0; j<sentence.size(); j++) {  
-      if (sentence[j]->getWord() == term) { 
-	foundTerm=true;
-      }else{
-	sentenceCount++;
-      }
-    }
-    if (foundTerm) {
-      count += sentenceCount;
-    }
-  }
-  return count;
-}
-    
-
-/*
-void NLP::SuffixTree::SuffixTree::findPhrases(string uid) {
-  set<string> phraseSet;
-  for (unsigned int i=0; i<this->sentenceNodes.size(); i++) {
-    vector<NLP::SuffixTree::STNode *> sentence = this->sentenceNodes[i];
-    //int prevFreq=0;
-    double prev_kai;
-    vector<NLP::SuffixTree::STNode *> phraseNodeList;
-    for (unsigned int j=0; j<sentence.size(); j++) {
-      NLP::SuffixTree::STNode *node = sentence[j];
-      if (phraseNodeList.size() > 0) {
-	NLP::SuffixTree::STNode *prevNode = phraseNodeList[phraseNodeList.size()-1];
-	double kai_sq=0;
-	int gfreq=0;
-	this->kaiSquared(prevNode, node, kai_sq, gfreq);
-	if (kai_sq > 0.5) {
-	  //phraseNodeList.push_back(node);
-	}else{
-	  //cout << phrase << " : " << prevFreq << endl;
-	  string phrase;
-	  phrase.append(phraseNodeList[0]->getWord());
-	  for (unsigned int k=1; k<phraseNodeList.size(); k++) {
-	    phrase.append(" ").append(phraseNodeList[k]->getWord());
-	  }
-	  if (phraseNodeList.size() == 1) {
-	    prev_kai=0;
-	  }
-	  NLP::SuffixTree::TermFreq tf(phrase, gfreq, prev_kai);
-	  if (phraseSet.find(phrase) == phraseSet.end()) {
-	    phraseSet.insert(phrase);
-	    this->phrases.push(tf);
-	  }
-	  phraseNodeList.clear();
-
-	}
-      prev_kai = kai_sq;
-      }
-      phraseNodeList.push_back(node);
-    }
-  }
-}
-*/
-void NLP::SuffixTree::SuffixTree::getFrequencies(string g, string w, int &gfreq, int &wfreq, int &gwfreq) {
-  for (unsigned int i=0; i<this->sentenceNodes.size(); i++) {
-    vector<NLP::SuffixTree::STNode *> sentence = this->sentenceNodes[i];
-    NLP::SuffixTree::STNode *prevNode=NULL;
-    for (unsigned int j=0; j<sentence.size(); j++) {
-      NLP::SuffixTree::STNode *node = sentence[j];
-      if (node->getWord() == g) {
-	gfreq++;
-      }else if((w.size()) > 0 && node->getWord() == w) {
-	wfreq++;
-	if (prevNode && (prevNode->getWord() == g)) {
-	  gwfreq++;
-	}
-      }
-      prevNode = node;
-    }
-  }
-}
-
-void NLP::SuffixTree::SuffixTree::kaiSquared(NLP::SuffixTree::STNode *node1, NLP::SuffixTree::STNode *node2, double &kai_sq, int &gfreq) {
-  string g = node1->getWord();
-  string w;
-  if (node2) {
-    w = node2->getWord();
-  }
-  int wfreq=0;
-  int gwfreq=0;
-  this->getFrequencies(g, w, gfreq, wfreq, gwfreq);
-  if (gfreq <= 1) {
-    return;
-  }
-  //int totalFreq = gfreq+wfreq;
-  kai_sq = (double) (gwfreq / (float) gfreq);
-  //cout << "Comparing: " << g << " with " << w << endl;
-  //cout << "\t percent " <<  kai_sq << endl;
-}
-/*
-priority_queue<NLP::SuffixTree::TermFreq> NLP::SuffixTree::SuffixTree::getPhrases() {
-  return this->phrases;
-}
-*/
-
-
 double NLP::SuffixTree::SuffixTree::_ridf(NLP::SuffixTree::STNode *node) {
   int wf = node->getFrequencyCount();
   unsigned long df = node->getNumberOfStories();
@@ -356,10 +211,11 @@ double NLP::SuffixTree::SuffixTree::calcInformativeness(string &phrase) {
     if (i == 0) {
       // make sure the first word is a noun or verb
       string pos = childNode->getPos();
-      if (pos.size() >= 2 && (pos.substr(0,2) == "NN" || 
-			      pos.substr(0,2) == "JJ" || 
-			      pos.substr(0,2) == "RB" || 
-			      pos.substr(0,2) == "VB")) {      
+      if (pos.size() >= 2 && (pos.substr(0,2) == "NN"  
+			      || pos.substr(0,2) == "JJ"  
+			      //|| pos.substr(0,2) == "RB"  
+			      //|| pos.substr(0,2) == "VB"
+			      )) {      
 	// this is fine
       }else{
 	break;
@@ -373,7 +229,7 @@ double NLP::SuffixTree::SuffixTree::calcInformativeness(string &phrase) {
   if (found) {
     // make sure the last node is a noun or verb
     string pos = node->getPos();
-    if (pos.size() >= 2 && (pos.substr(0,2) == "NN" || pos.substr(0,2) == "VB")) {
+    if (pos.size() >= 2 && (pos.substr(0,2) == "NN")) {
       ridf = this->_ridf(node);
     }
   }

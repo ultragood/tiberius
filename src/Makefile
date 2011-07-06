@@ -101,3 +101,7 @@ $(BIN_DIR)/cassandra: $(CASSANDRA_OBJECT_FILES)
 clean:
 
 	rm -rf $(BUILD_DIR) $(BIN_DIR) $(LIB_DIR) $(TEST_DIR)
+
+
+mytest: mytest.cpp libnlp.so
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CASSANDRA_OBJECT_FILES) $(INCLUDES) -lpthread $(LIBS) -L. -lnlp mytest.cpp -o mytest

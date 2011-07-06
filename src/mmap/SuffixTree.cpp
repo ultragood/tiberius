@@ -41,8 +41,9 @@ tiberius::mmap::SuffixTree::SuffixTree(void *memoryFile, SuffixTreeVars *globalV
     root->pos[0] = '\0';
     root->childList = NULL;
     root->lastChild = NULL;
+    this->globalVars->root_offset = this->globalVars->offset;
     this->globalVars->offset = this->globalVars->offset+this->llsize;
-    globalVars->root = root;
+    this->globalVars->root = root;
     cout << "root term: " << root->term << endl;
   }
 }
@@ -169,10 +170,16 @@ void tiberius::mmap::SuffixTree::persist() {
   long offset = this->globalVars->offset;  
   tiberius::mmap::Node *node = NULL;
   cout << "about to write to file ..." << endl;
-  map<string, tiberius::mmap::Node *> nodeMap;
-  nodeMap[string("__ROOT__")] = this->globalVars->root;
+  map<string, tiberius::mmap::Node *> *nodeMap = NULL;
+  
+  vector<map<string, tiberius::mmap::Node *>* > nodeMapPerLevel;
   for (unsigned int i=0; i<this->levels.size(); i++) {
-
+    if (!nodeMap) {
+      nodeMap = new map<string, tiberius::mmap::Node *>();      
+      (*nodeMap)[string("__ROOT__")] = this->globalVars->root;
+      (*nodeMap)[string("__ROOT__")] = this->getRoot();
+    }
+    map<string, tiberius::mmap::Node *> *currentNodeMap = new map<string, tiberius::mmap::Node *>();
     //    if (node == NULL) {
     //  node = this->globalVars->root;
     //}else{
@@ -182,7 +189,7 @@ void tiberius::mmap::SuffixTree::persist() {
     for (map<string, tiberius::mmap::WordAttributes *>::iterator it=level->begin(); it!=level->end(); it++) {
       string term = it->first;
       tiberius::mmap::WordAttributes *wa = it->second;
-      node = nodeMap[wa->parent];
+      node = (*nodeMap)[wa->parent];
       //      cout << "Going to write out children for node: " << wa->parent << endl;
       tiberius::mmap::LinkedList *childList = NULL;
       if (!node->childList) {
@@ -213,8 +220,10 @@ void tiberius::mmap::SuffixTree::persist() {
       childList->node = child;
       node = node->childList->node;
       //cout << "Adding term: " << term << " to nodeMap ... " << endl;
-      nodeMap[term] = node;
+      (*currentNodeMap)[term] = node;
     }
+    delete nodeMap;
+    nodeMap = currentNodeMap;
   }
   this->globalVars->offset = offset;
   

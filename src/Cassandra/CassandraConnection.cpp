@@ -29,7 +29,7 @@ struct data_t{
     int value;
 };
 
-
+/*
 int main(){
 //    CassandraConnection::instance;
     string text(" characters in pattern rules can be quoted with preceding backslashes (). Backslashes that would otherwise quote  characters can be quoted with more backslashes. Backslashes that quote  characters or other backslashes are removed from the pattern before it is compared to file names or has a stem substituted into it. Backslashes that are not in danger of quoting  characters go unmolested. For example, the pattern theweirdpattern has theweird preceding the operative  character, and pattern following it. The final two backslashes are left alone because they cannot affect any  character.");
@@ -50,4 +50,4 @@ int main(){
     return 0;
 }
 
-
+*/

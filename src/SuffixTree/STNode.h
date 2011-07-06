@@ -18,6 +18,7 @@ namespace NLP {
         class STNode {
             public:
                 STNode(SuffixTree *tree, unsigned long uid);
+		STNode(){}
                 virtual ~STNode();
                 inline bool isRoot() const {
                     return root;
@@ -40,7 +41,10 @@ namespace NLP {
 		inline void setFreeLingWord(word w) {
 		  this->w = w;
 		}
-		
+
+		//typedef (visitor_function) void(STNode &node);
+		//void visit(visitor_function func);
+
 		inline string getPos() {
 		  //cout << "about to get form: ";
 		  //cout << w.get_form() << endl;

@@ -20,7 +20,7 @@ namespace tiberius{
 */
 
     template<class T>
-    static string serialize(T value){
+    static string serialize(T &value){
         ostringstream ss;
         boost::archive::text_oarchive oa(ss);
         oa << value;
@@ -28,9 +28,25 @@ namespace tiberius{
     }
 
     template<class T>
-    static void deserialize(string s, T &value){
+      static string serializeFile(string filename, T value){
+      //ostringstream ss;
+      ofstream ss(filename);
+      boost::archive::text_oarchive oa(ss);
+      oa << value;
+      return filename;
+    }
+
+    template<class T>
+    static void deserialize(string &s, T &value){
         istringstream is(s);
         boost::archive::text_iarchive ia(is);
         ia >> value;
+    }
+
+    template<class T>
+    static void deserializeFile(string s, T &value){
+      ifstream is(s);
+      boost::archive::text_iarchive ia(is);
+      ia >> value;
     }
 }

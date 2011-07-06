@@ -9,6 +9,7 @@ namespace tiberius {
       long offset;
       unsigned long docCount;
       Node *root;
+      long root_offset;
     };
   }
 }

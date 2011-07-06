@@ -28,7 +28,8 @@ namespace tiberius {
       void persist();
 
       inline Node * getRoot() {
-	return this->globalVars->root;
+	tiberius::mmap::Node *root = (tiberius::mmap::Node *) memoryFile + this->globalVars->root_offset;	
+	return root;
       }
 
     private:
