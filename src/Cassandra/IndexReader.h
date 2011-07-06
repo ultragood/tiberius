@@ -1,6 +1,8 @@
 #pragma once
 
 #include "TermFrequencyVector.h"
+#include "DocResults.h"
+#include <map>
 
 using namespace std;
 using namespace tiberius;
@@ -11,7 +13,9 @@ namespace tiberius{ namespace index {
         public:
         IndexReader();
         TermFrequencyVector getTermFrequencyVector(string &docId);
-        void getDocsForTerm(string &term, vector<string> &docs);
+        int getDocCount();
+        void getDocsForTerm(string &term, vector<DocResults> &docs);
+        void getDocFreqsForTerms(const vector<string> &terms, map<string, int32_t> &counts);
         
     };
 

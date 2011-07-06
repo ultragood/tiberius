@@ -73,10 +73,9 @@ compile-tests: libnlp.so $(BUILD_DIR)/gtest_main.a $(TEST_OBJECT_FILES)
 
 #### main apps
 
-$(BIN_DIR)/%: $(CASSANDRA_OBJECT_FILES) %.cpp
+$(BIN_DIR)/%: %.cpp $(CASSANDRA_OBJECT_FILES)
 
 	@mkdir -p $(dir $@)
-	@$(MAKE) libnlp.so
 	$(CXX) $(CXXFLAGS) $(DEFINES) $(INCLUDES) $(LIBS) -lnlp $^ -o $@
 
 

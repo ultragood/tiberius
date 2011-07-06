@@ -147,6 +147,57 @@ namespace tiberius{ namespace index {
             return true;
         }
 
+      bool getCounts(map<string, int32_t>& counts, const vector<string> &keys, const string &col_family, const string &super_col){
+            ColumnParent cp;
+            cp.column_family.assign(col_family);
+            cp.super_column.assign(super_col);
+            cp.__isset.super_column = super_col.size() > 0;
+
+            SlicePredicate pr; 
+            SliceRange sr;
+            sr.start = "";
+            sr.finish = "";
+            sr.count = 100;
+            pr.slice_range = sr;
+            pr.__isset.slice_range = true; // set __isset for the columns instead if you use them
+
+
+            return getCounts(counts, keys, cp, pr);
+
+      }
+      bool getCounts(map<string, int32_t>& counts, const vector<string> &keys, const ColumnParent &column_parent, const SlicePredicate &predicate){
+            
+            try{
+                client.multiget_count(counts, keys, column_parent, predicate, ConsistencyLevel::ONE);
+            }
+            catch (TException &tx)              { cerr << "TException ERROR: " << tx.what() << endl; return false; }
+            return true;
+      }
+
+
+
+      bool add(const string &key, const string &cfamily, const string &column_name, string super_col = "", int incr = 1){
+        CounterColumn counter;
+        counter.name = column_name;
+        counter.value = incr;
+
+        ColumnParent cp;
+        cp.column_family.assign(cfamily);
+        cp.super_column.assign(super_col);
+        cp.__isset.super_column = super_col.size() > 0;
+
+        return add(key, cp, counter);
+
+      }
+
+      bool add(const string &key, const ColumnParent &cparent, const CounterColumn cc){
+            try{
+                client.add(key, cparent, cc, ConsistencyLevel::ONE);
+            }
+            catch (TException &tx)              { cerr << "TException ERROR: " << tx.what() << endl; return false; }
+            return true;
+      }
+
     private:
         CassandraConnection(string host, int port) : 
                 isopen(false),

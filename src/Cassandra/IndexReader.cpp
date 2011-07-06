@@ -50,7 +50,7 @@ TermFrequencyVector IndexReader::getTermFrequencyVector(string &docId){
 }
 
 
-void IndexReader::getDocsForTerm(string &term, vector<string> &docs){
+void IndexReader::getDocsForTerm(string &term, vector<DocResults> &docs){
     ColumnParent column_parent;
     column_parent.column_family.assign(TERMINFO_COLUMN_FAMILY);
     column_parent.__isset.super_column = false;
@@ -58,12 +58,9 @@ void IndexReader::getDocsForTerm(string &term, vector<string> &docs){
     vector<KeySlice> key_slices;
     CassandraConnection::instance().getAll(term, term, column_parent, key_slices);
 
-    cout << " Docs for Term: " << term << endl;
-
     for(size_t s=0; s < key_slices.size(); s++){
         for(size_t c=0; c < key_slices[s].columns.size(); c++){
             string docid = key_slices[s].columns[c].super_column.name;
-            docs.push_back(docid);
 
             vector<unsigned int> positions;
             unsigned int frequency;
@@ -78,14 +75,29 @@ void IndexReader::getDocsForTerm(string &term, vector<string> &docs){
                 }
 
             }
+            docs.push_back(DocResults(docid, frequency, positions));
+/*
             cout << "{docid: " << docid << ", " << " frequency: " << frequency << ", positions: [";
             for(unsigned int i=0; i < positions.size(); i++){
                 if(i > 0) cout << ", ";
                 cout << positions[i];
             }
             cout << "]}" << endl;
+*/
         }
     }
+}
 
+int IndexReader::getDocCount(){
+    ColumnOrSuperColumn csc;
+    CassandraConnection::instance().get(csc, KEY_GLOBAL_DOC_COUNT, COLUMN_FAMILY_DOC_COUNT, COLUMN_KEY_DOC_COUNT);
+
+    return csc.counter_column.value;
+    
+}
+
+void IndexReader::getDocFreqsForTerms(const vector<string> &terms, map<string, int32_t> &counts){
+    string empty;
+    CassandraConnection::instance().getCounts(counts, terms, TERMINFO_COLUMN_FAMILY, empty);
     
 }

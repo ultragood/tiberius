@@ -65,5 +65,8 @@ void IndexWriter::writeDocument(string &doc_id, string &text, Analyzer &analyzer
     CassandraConnection::instance().insert(doc_id, DOCUMENT_COLUMN_FAMILY, COLUMN_KEY_FREQ, serialize(doc.getFrequencies()));
     CassandraConnection::instance().insert(doc_id, DOCUMENT_COLUMN_FAMILY, COLUMN_KEY_TOKEN_COUNT, serialize(doc.getTokenCount()));
 
+    // this key should include something additional like data type
+    CassandraConnection::instance().add(KEY_GLOBAL_DOC_COUNT, COLUMN_FAMILY_DOC_COUNT, COLUMN_KEY_DOC_COUNT);
+
     cout << "written!" << endl;
 }
