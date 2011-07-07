@@ -34,7 +34,7 @@ TermFrequencyVector IndexReader::getTermFrequencyVector(string &docId){
             if(col_name == COLUMN_KEY_TOKEN_COUNT){
                 deserialize(value, token_count);
             }else if(col_name == COLUMN_KEY_POSITIONS){
-                deserialize(value, positions);
+//                deserialize(value, positions);
             }else if(col_name == COLUMN_KEY_TERMS){
                 deserialize(value, terms);
             }else if(col_name == COLUMN_KEY_FREQ){
@@ -44,11 +44,40 @@ TermFrequencyVector IndexReader::getTermFrequencyVector(string &docId){
     }
     TermFrequencyVector tv(token_count, terms, frequencies, positions);
 
-    cout << tv.toString() << endl;
+//    cout << tv.toString() << endl;
 
     return tv;
 }
 
+
+void IndexReader::getDocsForTermList(vector<string> &terms, map<string, int> &docs){
+    ColumnParent column_parent;
+    column_parent.column_family.assign(TERMINFO_COLUMN_FAMILY);
+    column_parent.__isset.super_column = false;
+
+    map<string, vector<ColumnOrSuperColumn> > results;
+    CassandraConnection::instance().getAll(terms, column_parent, results);
+
+    for(map<string, vector<ColumnOrSuperColumn> >::iterator it = results.begin(); it!= results.end(); it++){
+        for(size_t c=0; c < it->second.size(); c++){
+            ColumnOrSuperColumn * col = &it->second[c];
+
+            string docid = col->super_column.name;
+            unsigned int frequency;
+
+            for(size_t i=0; i < col->super_column.columns.size(); i++){
+                string col_name = col->super_column.columns[i].name;
+                string value = col->super_column.columns[i].value;
+                if(col_name == COLUMN_KEY_FREQ){
+                    deserialize(value, frequency);
+                }
+            }
+
+            docs[docid]++; // = frequency;
+        }
+    }
+
+}
 
 void IndexReader::getDocsForTerm(string &term, vector<DocResults> &docs){
     ColumnParent column_parent;
@@ -100,4 +129,9 @@ void IndexReader::getDocFreqsForTerms(const vector<string> &terms, map<string, i
     string empty;
     CassandraConnection::instance().getCounts(counts, terms, TERMINFO_COLUMN_FAMILY, empty);
     
+}
+
+int IndexReader::getDocFreqForTerm(const string &term){
+    string empty;
+    return CassandraConnection::instance().getCount(term, TERMINFO_COLUMN_FAMILY, empty);
 }

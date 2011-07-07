@@ -23,12 +23,15 @@ SOURCE_DEFINES=-DHAVE_CXX_STDHEADERS
 DEFINES=-D_LINUX -D_REENTRANT -D_GNU_SOURCE -D_LARGEFILE64_SOURCE $(D)
 INCLUDES=-I. -I/usr/local/include/thrift -ICassandra/gen-cpp -ICassandra $(TEST_INCLUDES)
 
+# stop removing intermediate cassandra files
+.SECONDARY:
+
 
 
 FLEXLIB=-l$(subst lib,,$(basename $(notdir $(firstword $(wildcard /usr/lib/lib$1*.so /usr/lib64/lib$1*.so /usr/local/lib/lib$1*.so)))))
 
-%.cpp: %.h
-	@touch $@
+#%.cpp: %.h
+#	@touch $@
 
 $(BUILD_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)

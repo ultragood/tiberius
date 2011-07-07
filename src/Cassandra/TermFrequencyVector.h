@@ -30,6 +30,10 @@ namespace tiberius{
         public:
 
         TermFrequencyVector();
+        TermFrequencyVector(unsigned int token_count, vector<string> terms){
+             TermFrequencyVector(token_count, terms, vector<unsigned int>(), vector<vector<unsigned int> >());
+
+        }
         TermFrequencyVector(unsigned int token_count, vector<string> terms, vector<unsigned int> freqs, vector<vector<unsigned int> > positions) :
             token_count(token_count), 
             terms(terms), 
