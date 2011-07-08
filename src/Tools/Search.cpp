@@ -12,18 +12,18 @@ using namespace tiberius::index;
 using namespace tiberius::analysis;
 
 int docCount = 0;
-double idf(int cdc, int tdc, int doc_size){
-    return log(cdc/(tdc/static_cast<double>(doc_size)));
+double idf(int cdc, int tdc){
+    return log(cdc/tdc);
 }
 
-double idf(IndexReader &reader, string &term, int doc_size){
+double idf(IndexReader &reader, string &term){
     docCount = docCount == 0 ? reader.getDocCount() : docCount;
-    return idf(docCount, reader.getDocFreqForTerm(term), doc_size);
+    return idf(docCount, reader.getDocFreqForTerm(term));
 
 }
-double idf(IndexReader &reader, int freq, int doc_size){
+double idf(IndexReader &reader, int termDocs){
     docCount = docCount == 0 ? reader.getDocCount() : docCount;
-    return idf(docCount, freq, doc_size);
+    return idf(docCount, termDocs);
 
 }
 
@@ -42,7 +42,8 @@ double cosine(map<string, double> &idfs, TermFrequencyVector &tv){
         int freq = counts[tv.getTerms()[i]];
         if(freq == 0) continue;
 
-        sum_of_squares1 += tv.getFrequencies()[i] * idf(reader, counts[tv.getTerms()[i]], tv.getTokenCount()); 
+        double tf = tv.getFrequencies()[i] / static_cast<double>(tv.getTokenCount());
+        sum_of_squares1 += tv.getFrequencies()[i] * idf(reader, counts[tv.getTerms()[i]]) * tf; 
 
         map<string, double>::const_iterator it = idfs.find(tv.getTerms()[i]);
         if(it != idfs.end()){
@@ -91,12 +92,12 @@ int main(int argc, char **argv){
     map<string, int32_t> counts;
     reader.getDocFreqsForTerms(terms, counts);
     map<string, double> idfs;
-
+    double tf = 1 / terms.size();
     for(map<string, int>::iterator it= counts.begin(); it!= counts.end(); it++){
-        cout << it->first << " : " << it->second << " " << idf(corpus_size, it->second, terms.size()) << endl;
+        cout << it->first << " : " << it->second << " " << idf(corpus_size, it->second) << endl;
         if(it->second == 0) continue;
-        double idfval =  idf(corpus_size, it->second, terms.size());
-        idfs[it->first] = idfval;
+        double idfval =  idf(corpus_size, it->second);
+        idfs[it->first] = idfval * tf;
     }
 
     cout << "-- Candidates --" << endl;

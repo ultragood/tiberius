@@ -42,7 +42,8 @@ void readArticle(string fileName, string &article) {
   }
   vector<string> splitVec;
   boost::split(splitVec, data, boost::is_any_of("|"));
-  article=splitVec[1];
+  if(splitVec.size() > 1)
+      article=splitVec[1];
 }
 
 void getPhrase(vector<string> &words, unsigned int &start, unsigned int &end, string &phrase) {
@@ -55,6 +56,13 @@ void getPhrase(vector<string> &words, unsigned int &start, unsigned int &end, st
 }
 
 int main (int argc, char* const argv[])  {
+
+  if(argc < 2){
+    cout << "mytest [mmap_file] [text_dir]" << endl;
+    return 1;
+  }
+  
+
   int fd; 
   void* file_memory; 
   /* Prepare a file large enough to hold an unsigned integer. */ 
@@ -89,7 +97,7 @@ int main (int argc, char* const argv[])  {
     }
   }
   */
-  string dir("/home/mikep/work/tiberius/canned_data/cnn/");
+  string dir(argv[2]);
   //string dir("test-data/");
     // freeling path.
     string path="/usr/local/share/FreeLing/en/";
