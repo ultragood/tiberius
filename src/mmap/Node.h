@@ -10,14 +10,21 @@ namespace tiberius {
       unsigned int frequencyCount;
       unsigned int docCount;
       char pos[5];
-      char term[50];
+      char term[21];
+      /*
       LinkedList *childList;
       LinkedList *lastChild;
+      */
+      long offset;
+      long childListOffset;
+      long lastChildOffset;
     };
     struct LinkedList {
-      char s[50];
-      Node *node;
-      LinkedList *next;
+      //char s[50];
+      //Node *node;
+      //LinkedList *next;
+      long nodeOffset;
+      long nextOffset;
     };
 
 

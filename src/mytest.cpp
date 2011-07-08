@@ -6,6 +6,7 @@
 #include <time.h> 
 #include <unistd.h> 
 #include <string.h>
+#include <queue>
 #include "mmap/Node.h"
 #include "mmap/SuffixTree.h"
 
@@ -17,9 +18,19 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/filesystem.hpp>
 
-#define FILE_LENGTH 4*1024*1024*1024
+#define FILE_LENGTH 6*1024*1024*1024
  
 using namespace std;
+
+struct RidfPhrase {
+  double ridf;
+  string phrase;
+  
+  inline bool operator< (const RidfPhrase &a) const {
+    return this->ridf < a.ridf;
+  }
+};
+
 
 
 void readArticle(string fileName, string &article) {
@@ -62,14 +73,24 @@ int main (int argc, char* const argv[])  {
     globalVars ->offset = 0;
     globalVars->root = NULL;
     globalVars->offset = stvsize;
-  }else{
-    cout << "Offset: " << globalVars->offset << endl;
-    tiberius::mmap::Node *root = (tiberius::mmap::Node *) file_memory + globalVars->root_offset;
-    cout << "node name: " << root->term << endl;
   }
   tiberius::mmap::SuffixTree stree(file_memory, globalVars);
-
-    string dir("/home/mikep/work/tiberius/canned_data/cnn/");
+  /*
+  if (fileExists) {
+    cout << "Offset: " << globalVars->offset << endl;
+    tiberius::mmap::Node *root = (tiberius::mmap::Node *) file_memory + globalVars->root_offset;
+    cout << "Root name: " << root->term << endl;
+    cout << "root children: " << endl;
+    tiberius::mmap::LinkedList *list = stree.getLinkedList(root->childListOffset);
+    while (list->nextOffset != 0) {
+      tiberius::mmap::Node *node = stree.getNode(list->nodeOffset);
+      cout << node->term << endl;
+      list = stree.getLinkedList(list->nextOffset);
+    }
+  }
+  */
+  string dir("/home/mikep/work/tiberius/canned_data/cnn/");
+  //string dir("test-data/");
     // freeling path.
     string path="/usr/local/share/FreeLing/en/";
     
@@ -115,7 +136,7 @@ int main (int argc, char* const argv[])  {
 
   if (!fileExists) {
     string article;
-    for (unsigned int i=0; i<1; i++) {
+    for (unsigned int i=0; i<50; i++) {
       stringstream ss;
       ss << i;
       string filename(dir);
@@ -154,13 +175,19 @@ int main (int argc, char* const argv[])  {
   */
   
   }else{
+    /*
+    string term(argv[2]);
+    stree.calcInformativeness(term);
+    */
     cout << "Enter a file to analyze: " << endl;
     string filename;
     string article;
     while (getline(cin,filename)) {
       if (filename.size() <= 0) {
 	cout << "Please select a file to analyze: " << endl;
-	continue;      
+	continue;
+      }else if (filename == "q") {
+	break;
       }else if (!boost::filesystem::exists(dir+filename)) {
 	cout << "File does not exist. Please select another file to analyze: " << endl;
 	continue;
@@ -183,6 +210,7 @@ int main (int argc, char* const argv[])  {
       morfo.analyze(ls);
 
       set<string> phrases;
+      priority_queue<RidfPhrase> pq;
       for (list<sentence>::iterator it=ls.begin(); it!=ls.end(); it++) {
 	vector<word> sent = it->get_words();
 	vector<string> words;
@@ -199,18 +227,30 @@ int main (int argc, char* const argv[])  {
 	    if (phrases.find(phrase) == phrases.end()) {
 	      phrases.insert(phrase);
 	      double ridf = stree.calcInformativeness(phrase);
-	      //if (ridf > 0) {
-	      //pq.push(Keywords::Phrase(phrase, ridf));
-	      cout << phrase << " ridf: " << ridf << endl;
-	      //}else{
-	      //	break;
-	      //}
+	      if (ridf > 0) {
+		RidfPhrase p;
+		p.phrase = phrase;
+		p.ridf = ridf;
+		pq.push(p);
+		//cout << phrase << " ridf: " << ridf << endl;
+	      }else{
+		//cout << "Could not find: " << phrase << endl;
+	      	break;
+	      }
 	    }
 	  }
 	}
       }
+      int count=0;
+      while (!pq.empty()) {
+	if (count++ >= 20) {
+	  break;
+	}
+	RidfPhrase phrase = pq.top();
+	cout << phrase.phrase << " : " << phrase.ridf << endl;
+	pq.pop();
+      }      
     } // while (getline...
-
   }
   // ------------------------------------------
 
