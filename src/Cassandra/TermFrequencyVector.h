@@ -30,6 +30,10 @@ namespace tiberius{
         public:
 
         TermFrequencyVector();
+        TermFrequencyVector(unsigned int token_count, vector<string> terms){
+             TermFrequencyVector(token_count, terms, vector<unsigned int>(), vector<vector<unsigned int> >());
+
+        }
         TermFrequencyVector(unsigned int token_count, vector<string> terms, vector<unsigned int> freqs, vector<vector<unsigned int> > positions) :
             token_count(token_count), 
             terms(terms), 
@@ -40,10 +44,10 @@ namespace tiberius{
         // temp for testing
         void add(string term, unsigned int freq, vector<unsigned int> positions);
 
-        int getTokenCount(){return token_count;}
-        vector<vector<unsigned int> > getPositions() { return positions; }
-        vector<unsigned int> getFrequencies() { return frequencies; }
-        vector<string> getTerms(){ return terms;}
+        unsigned int& getTokenCount(){return token_count;}
+        vector<vector<unsigned int> >& getPositions() { return positions; }
+        vector<unsigned int>& getFrequencies() { return frequencies; }
+        vector<string>& getTerms(){ return terms;}
 
         string toString(){
             ostringstream os;
